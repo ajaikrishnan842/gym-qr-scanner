@@ -125,21 +125,29 @@ const GYM_URL =
             fps: 10,
             qrbox: { width: 220, height: 220 }
           },
-          function(decodedText) {
-            if (detected) return;
+         
+function(decodedText) {
+  if (detected) return;
 
-            detected = true;
+  detected = true;
 
-            document.getElementById("token").value =
-              decodedText.trim();
+  const token = decodedText.trim();
 
-            document.getElementById("result")
-              .style.display = "block";
+  document.getElementById("token").value = token;
 
-            setStatus("QR code scanned successfully!");
+  document.getElementById("result")
+    .style.display = "block";
 
-            stopCamera();
-          },
+  setStatus("QR detected. Opening gym dashboard...");
+
+  stopCamera();
+
+  const url = GYM_URL +
+    "#checkin=" + encodeURIComponent(token);
+
+  window.location.assign(url);
+}
+,
           function() {}
         );
 
