@@ -5,22 +5,191 @@
   <meta charset="UTF-8">
   <meta name="viewport"
         content="width=device-width, initial-scale=1">
-  <title>Gym QR Scanner Test</title>
+
+  <title>Gym QR Scanner</title>
+
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f3f5f9;
+      margin: 0;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .card {
+      max-width: 480px;
+      margin: 20px auto;
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px #0002;
+    }
+
+    button {
+      padding: 14px;
+      margin: 8px 0;
+      width: 100%;
+      background: #1765c1;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    #reader {
+      width: 100%;
+      margin: 20px auto;
+    }
+
+    #status {
+      padding: 15px;
+      background: #e2e8f0;
+      border-radius: 8px;
+      margin-top: 15px;
+      overflow-wrap: anywhere;
+    }
+
+    #result {
+      display: none;
+      margin-top: 20px;
+    }
+
+    #token {
+      width: 95%;
+      padding: 10px;
+      box-sizing: border-box;
+    }
+  </style>
 </head>
 
-<body style="font-family:Arial; padding:30px;">
+<body>
 
-  <h1>GYM QR SCANNER</h1>
+  <div class="card">
+    <h2>GYM QR SCANNER</h2>
 
-  <h2>Camera Test Page</h2>
+    <p>Scan a member's QR card</p>
 
-  <p>If you can read this, HTML is loading correctly.</p>
+    <div id="reader"></div>
 
-  <button
-    style="padding:15px; background:blue; color:white;"
-    onclick="alert('JavaScript is working!')">
-    TEST BUTTON
-  </button>
+    <button onclick="startCamera()">
+      Start Camera
+    </button>
+
+    <button onclick="stopCamera()">
+      Stop Camera
+    </button>
+
+    <div id="status">Ready to scan</div>
+
+    <div id="result">
+      <h3>QR Code Detected</h3>
+
+      <input id="token" readonly>
+
+      <button onclick="copyToken()">
+        Copy QR Token
+      </button>
+    </div>
+  </div>
+
+  <script>
+    let scanner = null;
+    let running = false;
+    let detected = false;
+
+    function setStatus(text) {
+      document.getElementById("status")
+        .textContent = text;
+    }
+
+    async function startCamera() {
+      if (running) return;
+
+      try {
+        if (typeof Html5Qrcode === "undefined") {
+          throw new Error("QR library failed to load");
+        }
+
+        setStatus("Requesting camera permission...");
+
+        scanner = new Html5Qrcode("reader");
+
+        await scanner.start(
+          { facingMode: "environment" },
+          {
+            fps: 10,
+            qrbox: { width: 220, height: 220 }
+          },
+          function(decodedText) {
+            if (detected) return;
+
+            detected = true;
+
+            document.getElementById("token").value =
+              decodedText.trim();
+
+            document.getElementById("result")
+              .style.display = "block";
+
+            setStatus("QR code scanned successfully!");
+
+            stopCamera();
+          },
+          function() {}
+        );
+
+        running = true;
+        setStatus("Camera running. Show a QR card.");
+
+      } catch (error) {
+        running = false;
+
+        setStatus(
+          "Camera error: " +
+          (error?.message || String(error))
+        );
+
+        console.error(error);
+      }
+    }
+
+    async function stopCamera() {
+      if (!scanner) return;
+
+      try {
+        if (running) {
+          await scanner.stop();
+        }
+
+        scanner.clear();
+
+      } catch (error) {
+        console.error(error);
+      }
+
+      running = false;
+      scanner = null;
+    }
+
+    async function copyToken() {
+      const token =
+        document.getElementById("token").value;
+
+      try {
+        await navigator.clipboard.writeText(token);
+        setStatus("QR token copied!");
+      } catch (error) {
+        const input = document.getElementById("token");
+        input.focus();
+        input.select();
+        setStatus("Select and copy the token manually.");
+      }
+    }
+  </script>
 
 </body>
 </html>
